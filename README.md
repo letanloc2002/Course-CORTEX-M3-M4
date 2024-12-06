@@ -29,17 +29,48 @@
 
 ---
 
-- when you're in "handler mode", you will can access all resources
-
----
+- when you're in "handler mode", you will can access all resources, you can change anything you want
+- \*\*\* ISR_NUMBER nếu bằng 0 thì sẽ đang ở trong chế độ "Thread mode", nếu khác 0 thì sẽ ở trong chế độ handler, tùy vào giá trị ISR_NUMBER sẽ xác định được là handler gì
 
 ## Access levels of the processor
 
-- R0->R12 registers are for general purpose.(32bit)
-- the register R13 are
+1.  processor offers 2 access levels
+
+-privileged access level (PAL)
+-non-privileged access level (NPAL)
+-by default, your code wil run in PAL
+-when in thread mode can change to NPAL, but when in NPAL you can change back PAL, but its imposible when you in handler mode
+-handler mode code excution is always with PAL
+
+-use the Control register of the processor if you want to switch between the access level.
+\*\*\* CORE REGISTERS
+
+- R0->R12 registers are for general purpose.(32bit)(data upgrade, data storage)
+- the register R13 are SP (Stack pointer) use to track the memory, trỏ đến vùng nhớ để lưu trữ
+  - PSP: processor stack pointer
+  - MSP: main stack pointer
+
+-Link register (R14), It stores the return information for subrountines, function call and exceptions. On the reset, the processor sét the LR value to 0xFFFFFFFF
+
+- Khi chạy chương trình với fun1() và fun2(), với fun1() call fun2() thì tại thời điểm call thì LR(R13) sẽ được nạp pointer địa chỉ của cậu lệnh tiếp theo trong fun1() và PC sẽ được nạp địa chỉ của fun2()
+  -Program counter (PC)(R15). It contains the current program address. Reset, PC is loaded reset vector, which address 0x00000004, trỏ đến địa chỉ của câu lệnh kế tiếp
+
+- Program status register combine:
+  -application program status register (APSR) contains conditional flag
+  -interrrupt program status resgister(IPSR)
+  -excution program status resgister(EPSR)
+
+- T bit is used to change between ARM-ISA(0) and Thumb(1) state but in cortex Mx just support Thumb state so if set T bit is 0, that's not illegal
+
+- R0-R15 don't have unique address so they aren't a part of memory map, if you want to access it, you have to use assembly code.
 
 -------------ARM GCC inline assembly code usage ---------------
---------------Reset sequence of the processor------------------
+
+- \_\_asm volatile(code:output operand list: input operand list: clobber list);
+- \_\_asm volatile("MOV R0,R1");
+- \_\_asm volatile("MOV R0,R1":::);
+
+  --------------Reset sequence of the processor------------------
 
 1. When you reset the processor, The PC iss loaded with the value 0x0000_0000
 2. Then rpocessor reads the value memory location 0x0000_0000 in to MSP
@@ -52,7 +83,20 @@
 5. A reset handler is just a C or assembly function written by you to carry out any initializations required.
 6. From reset handler you call your main() function of the application
    -----------------Access level and T bit -----------------
-   ---------------------- memory Map and Bus interfaces----------
+
+1.Various ARM processors support ARM-Thumb interworking, that mean the ability to switch between ARM and Thumb state
+2.The processor must be in ARM state to excute instructions which are from ARM ISA anf the processor must be in Thumb state to excute instructions of Thumb ISA.
+3.If 'T' bit of the EPSR is set (1), rpocessor thinks that the next instruction which it is about to excute is from Thum ISA
+4.If 'T' bit of the EPSR is set (0), rpocessor thinks that the next instruction which it is about to excute is from ARM ISA
+5.The cortex Mx processor does not support the ARM state.
+Hence, the value of 'T' bit must always be 1.
+Failing to maintain this is illegal and this will result in the "Usage fault" exception.
+6.The lsb(bit 0) of the program counter (PC) is linked to this 'T' bit.
+When you load a value or an address in to PC the bit(0) of the value is loaded into the T-bit
+7.Hence, any address you place in the PC must have its 0th bit as 1.
+this is usually taken care by the compiler and programmers need not to worry most of the time. 8. This is the reason why you see all vector addressed are incremented by 1 in the vector table
+
+---------------------- memory Map and Bus interfaces----------
 
 - memory map explains mapping of different peripheral registers and memories in the processor addressable memory location range
 - the processor, addressable memory location range, depends upon the size of the address bus

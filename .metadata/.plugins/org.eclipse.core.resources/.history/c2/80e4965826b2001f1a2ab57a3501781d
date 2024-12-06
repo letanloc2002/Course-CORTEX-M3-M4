@@ -26,8 +26,6 @@ void task2_handler(void);
 void task3_handler(void);
 void task4_handler(void);
 void init_systick_timer(uint32_t tick_hz);
-__attribute__((naked)) void  init_scheduler_stack(uint32_t sched_top_of_stack);
-
 
 /* some stack memory  calculations*/
 #define SIZE_TASK_STACK			1024U
@@ -49,7 +47,7 @@ __attribute__((naked)) void  init_scheduler_stack(uint32_t sched_top_of_stack);
 #define SYSTICK_TIM_CLK 		(HSI_CLOCK)
 int main(void)
 {
-    init_scheduler_stack(SCHED_STACK_START);
+    /* Loop forever */
 	init_systick_timer(TICK_HZ);
 	for(;;);
 }
@@ -104,11 +102,7 @@ void init_systick_timer(uint32_t tick_hz)
 	*pSCVR |= (1<<0);//enable the counter
 
 }
-__attribute__((naked)) void  init_scheduler_stack(uint32_t sched_top_of_stack)
-		{
-	__asm volatile("MSR MSP,R0");
-	__asm volatile("BX LR");
-		}
+
 void SysTick_Handler(void)
 {
 
